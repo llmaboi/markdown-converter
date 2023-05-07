@@ -18,6 +18,8 @@
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/kit": "^1.5.0",
 		"@types/commonmark": "^0.27.6",
+		"@types/markdown-it": "^12.2.3",
+		"@types/turndown": "^5.0.1",
 		"@typescript-eslint/eslint-plugin": "^5.45.0",
 		"@typescript-eslint/parser": "^5.45.0",
 		"autoprefixer": "^10.4.14",
@@ -40,6 +42,8 @@
 	"type": "module",
 	"dependencies": {
 		"@tailwindcss/forms": "^0.5.3",
-		"commonmark": "^0.30.0"
+		"commonmark": "^0.30.0",
+		"markdown-it": "^13.0.1",
+		"turndown": "^7.1.2"
 	}
 }
