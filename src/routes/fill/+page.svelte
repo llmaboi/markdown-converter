@@ -1,22 +1,24 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { clipboard } from '@skeletonlabs/skeleton';
-	import { htmlTemplate } from '../htmlTemplate.store';
-	import TurndownService from 'turndown';
+	import { templateReducible } from '../htmlTemplate.store';
+	// import TurndownService from 'turndown';
 
-	var md = new TurndownService({
-		headingStyle: 'atx'
-	});
+	// var md = new TurndownService({
+	// 	headingStyle: 'atx'
+	// });
 	// const reader = new Parser();
 	// const writer = new HtmlRenderer();
 
-	$: parsedMarkdownText = md.turndown(htmlForm);
+	// $: parsedMarkdownText = md.turndown(htmlForm);
 	// $: parsedMarkdownText = JSON.stringify(md.turndown(htmlForm));
 
 	let htmlForm: string;
 
-	htmlTemplate.subscribe((value) => {
-		htmlForm = value;
+	const { dispatch, subscribe } = templateReducible();
+
+	subscribe((val) => {
+		htmlForm = val.html;
 	});
 
 	function routeToEdit() {
@@ -33,9 +35,9 @@
 		{@html htmlForm}
 
 		<!-- TODO: use proper values... -->
-		<button use:clipboard={parsedMarkdownText} class="btn variant-ringed">
+		<!-- <button use:clipboard={parsedMarkdownText} class="btn variant-ringed">
 			Copy form to clipboard
-		</button>
+		</button> -->
 
 		<button on:click|preventDefault={routeToEdit} class="btn variant-ringed">
 			Edit template

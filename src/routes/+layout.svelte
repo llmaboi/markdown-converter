@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import '@skeletonlabs/skeleton/themes/theme-hamlindigo.css';
 	// This contains the bulk of Skeletons required styles:
 	import '@skeletonlabs/skeleton/styles/all.css';
@@ -6,6 +6,9 @@
 	// Finally, your application's global stylesheet (sometimes labeled 'app.css')
 	import '../app.postcss';
 	import { AppShell, AppBar, LightSwitch, autoModeWatcher } from '@skeletonlabs/skeleton';
+	import { page } from '$app/stores';
+
+	$: classesActive = (href: string) => (href === $page.url.pathname ? '!bg-primary-700' : '');
 </script>
 
 <svelte:head>
@@ -21,7 +24,24 @@
 			<svelte:fragment slot="trail"><LightSwitch /></svelte:fragment>
 		</AppBar>
 	</svelte:fragment>
-	<svelte:fragment slot="sidebarLeft">Sidebar Left</svelte:fragment>
+	<svelte:fragment slot="sidebarLeft">
+		<nav class="list-nav">
+			<!-- (optionally you can provide a label here) -->
+			<ul>
+				<li>
+					<a href="/" class={classesActive('/')}>
+						<!-- <span class="badge bg-primary-500">💀</span> -->
+						<span class="flex-auto">Home</span>
+					</a>
+					<a href="/create" class={classesActive('/create')}>
+						<!-- <span class="badge bg-primary-500">💀</span> -->
+						<span class="flex-auto">Create</span>
+					</a>
+				</li>
+				<!-- ... -->
+			</ul>
+		</nav>
+	</svelte:fragment>
 	<svelte:fragment slot="sidebarRight">Sidebar Right</svelte:fragment>
 	<svelte:fragment slot="pageHeader">Page Header</svelte:fragment>
 	<!-- Router Slot -->

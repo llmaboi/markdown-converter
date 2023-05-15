@@ -1,19 +1,20 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Accordion, AccordionItem, CodeBlock } from '@skeletonlabs/skeleton';
-	import MarkdownIt from 'markdown-it';
-	import { htmlTemplate } from '../htmlTemplate.store';
+	// import MarkdownIt from 'markdown-it';
+	import { templateReducible } from '../htmlTemplate.store';
 	import { Parser, HtmlRenderer, Node } from 'commonmark';
+	import type { FormEventHandler } from 'svelte/elements';
 
 	const parser = new Parser();
 	const renderer = new HtmlRenderer();
 
-	const md = new MarkdownIt({
-		html: true
-	});
-	const md2 = new MarkdownIt({
-		// html: true
-	});
+	// const md = new MarkdownIt({
+	// 	html: true
+	// });
+	// const md2 = new MarkdownIt({
+	// 	// html: true
+	// });
 
 	let markdownText = '';
 	let parsedNode: Node;
@@ -27,23 +28,40 @@
 	// htmlTemplate.subscribe((value) => {
 	// 	htmlForm = value;
 	// });
+	const { dispatch, subscribe } = templateReducible();
 
-	$: {
-		// parsedMarkdownText = md.render(markdownText);
-		parsedNode = parser.parse(markdownText);
-		// walker = parsedMarkdownText.walker();
-		htmlText = renderer.render(parsedNode);
-		// renderedMarkdownText = md2.render(markdownText);
+	subscribe((value) => {
+		parsedNode = value.node;
+		htmlText = value.html;
+		markdownText = value.markdown;
+	});
 
-		// if (markdownText.length > 0 && parsedMarkdownText) {
-		// 	while ((event = walker.next())) {
-		// 		node = event.node;
-		// 		if (node.literal !== null && node.literal !== undefined) {
-		// 			console.log('node: ', node.literal);
-		// 		}
-		// 	}
-		// }
-	}
+	// $: {
+	// parsedMarkdownText = md.render(markdownText);
+	// try {
+	// 	parsedNode = parser.parse(markdownText);
+	// } catch (error) {
+	// 	console.log(error);
+	// }
+	// console.log('markdownText: ', markdownText);
+
+	// dispatch({
+	// 	type: 'html',
+	// 	value: renderer.render(parsedNode)
+	// });
+	// walker = parsedMarkdownText.walker();
+	// htmlText = renderer.render(parsedNode);
+	// renderedMarkdownText = md2.render(markdownText);
+
+	// if (markdownText.length > 0 && parsedMarkdownText) {
+	// 	while ((event = walker.next())) {
+	// 		node = event.node;
+	// 		if (node.literal !== null && node.literal !== undefined) {
+	// 			console.log('node: ', node.literal);
+	// 		}
+	// 	}
+	// }
+	// }
 
 	function downloadData() {
 		// If the data is string, you can convert it to Blob using: new Blob([stringData]).
@@ -60,8 +78,31 @@
 		a.remove();
 	}
 
+	const handleMarkdownChange: FormEventHandler<HTMLTextAreaElement> = (e) => {
+		console.log('e: ', e.currentTarget.value);
+		dispatch({
+			type: 'markdown',
+			value: e.currentTarget.value
+		});
+	};
+
+	function routeToCustomize() {
+		// Add raw MD or parsed nodes to store
+		//  so it can be re-used in the customized page.
+		dispatch({
+			type: 'markdown',
+			value: markdownText
+		});
+
+		goto('/customize');
+	}
+
 	function routeToFill() {
-		htmlTemplate.set(htmlText);
+		// htmlTemplate.set(htmlText);
+		dispatch({
+			type: 'html',
+			value: htmlText
+		});
 
 		goto('/fill');
 	}
@@ -78,12 +119,12 @@
 	 *      add a "customize" button which will split each section to its own input.
 	 *     i. Adding a "custom" will require a type, boolean or string as an input
 	 *        then generate a template with the string param replace or render a checkmark.
-	 * 
+	 *
 	 * 2. Allow users to download the "template"
 	 * 3. Allow users to upload a "template"
 	 * 4. Allow users to fill the "template"
 	 *   a. Users templates with "custom" values must be filled before they can
-	 *      download the result. 
+	 *      download the result.
 	 *     i. Checkboxes become icons / valid emojis.
 	 *     ii. Custom strings replace the proper values in the string template.
 	 * 5. Allow the users to copy or download the generated Markdown from the "template"
@@ -99,14 +140,18 @@
 <div class="container mx-auto p-8 space-y-8">
 	<h1>Create your template</h1>
 	<form>
-		<textarea class="textarea" bind:value={markdownText} />
+		<textarea class="textarea" on:input={handleMarkdownChange} />
 
 		<button on:click|preventDefault={downloadData} class="btn variant-ringed">
 			Download template
 		</button>
 
-		<button on:click|preventDefault={routeToFill} class="btn variant-ringed">
+		<!-- <button on:click|preventDefault={routeToFill} class="btn variant-ringed">
 			Fill made template
+		</button> -->
+
+		<button on:click|preventDefault={routeToCustomize} class="btn variant-ringed">
+			Customize template
 		</button>
 	</form>
 
