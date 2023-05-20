@@ -1,4 +1,4 @@
-export type RowType = 'boolean' | 'string' | 'markdown' | 'new';
+export type RowType = 'boolean' | 'string' | 'html' | 'new';
 
 type RowItems = {
 	type: RowType;
@@ -20,7 +20,7 @@ export type StringRowItem = RowItems & {
 };
 
 export type NodeRowItem = RowItems & {
-	type: 'markdown';
+	type: 'html';
 	value: string;
 };
 

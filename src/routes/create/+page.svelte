@@ -2,32 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { Accordion, AccordionItem, CodeBlock } from '@skeletonlabs/skeleton';
 	// import MarkdownIt from 'markdown-it';
-	import { templateReducible } from '../htmlTemplate.store';
-	import { Parser, HtmlRenderer, Node } from 'commonmark';
+	import type { Node } from 'commonmark';
 	import type { FormEventHandler } from 'svelte/elements';
-
-	const parser = new Parser();
-	const renderer = new HtmlRenderer();
-
-	// const md = new MarkdownIt({
-	// 	html: true
-	// });
-	// const md2 = new MarkdownIt({
-	// 	// html: true
-	// });
+	import { templateReducible } from '../htmlTemplate.store';
 
 	let markdownText = '';
 	let parsedNode: Node;
-	// let parsedMarkdownText = md.render(markdownText);
 	let htmlText = '';
-	// let walker;
-	// let event;
-	// let node;
 
-	// TODO:
-	// htmlTemplate.subscribe((value) => {
-	// 	htmlForm = value;
-	// });
 	const { dispatch, subscribe } = templateReducible();
 
 	subscribe((value) => {
@@ -35,33 +17,6 @@
 		htmlText = value.html;
 		markdownText = value.markdown;
 	});
-
-	// $: {
-	// parsedMarkdownText = md.render(markdownText);
-	// try {
-	// 	parsedNode = parser.parse(markdownText);
-	// } catch (error) {
-	// 	console.log(error);
-	// }
-	// console.log('markdownText: ', markdownText);
-
-	// dispatch({
-	// 	type: 'html',
-	// 	value: renderer.render(parsedNode)
-	// });
-	// walker = parsedMarkdownText.walker();
-	// htmlText = renderer.render(parsedNode);
-	// renderedMarkdownText = md2.render(markdownText);
-
-	// if (markdownText.length > 0 && parsedMarkdownText) {
-	// 	while ((event = walker.next())) {
-	// 		node = event.node;
-	// 		if (node.literal !== null && node.literal !== undefined) {
-	// 			console.log('node: ', node.literal);
-	// 		}
-	// 	}
-	// }
-	// }
 
 	function downloadData() {
 		// If the data is string, you can convert it to Blob using: new Blob([stringData]).
@@ -79,7 +34,6 @@
 	}
 
 	const handleMarkdownChange: FormEventHandler<HTMLTextAreaElement> = (e) => {
-		console.log('e: ', e.currentTarget.value);
 		dispatch({
 			type: 'markdown',
 			value: e.currentTarget.value
@@ -89,10 +43,10 @@
 	function routeToCustomize() {
 		// Add raw MD or parsed nodes to store
 		//  so it can be re-used in the customized page.
-		dispatch({
-			type: 'markdown',
-			value: markdownText
-		});
+		// dispatch({
+		// 	type: 'html',
+		// 	value: htmlText
+		// });
 
 		goto('/customize');
 	}
@@ -165,6 +119,7 @@
 				<pre>{@html htmlText}</pre>
 			</svelte:fragment>
 		</AccordionItem>
+
 		<AccordionItem open>
 			<svelte:fragment slot="summary">MD Preview</svelte:fragment>
 

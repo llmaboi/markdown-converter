@@ -1,8 +1,21 @@
 <script lang="ts">
-	import type { NewRowItem, RowType } from './rows.types';
+	import { Parser } from 'commonmark';
+	import { emptyCheck } from '../../components/emptyCheck';
+	import type { BooleanRowItem, NewRowItem, RowType, StringRowItem } from '../rows.types';
 	import type { FormEventHandler } from 'svelte/elements';
+	import { HtmlRenderer } from 'commonmark';
 
-	let selectedValue: 'boolean' | 'string';
+	export let location: number;
+	export let addRow: (
+		location: number,
+		// type: Extract<RowType, 'boolean' | 'string'>,
+		item: BooleanRowItem | StringRowItem
+	) => void;
+
+	let selectedValue: Extract<RowType, 'boolean' | 'string'>;
+
+	// const parser = new Parser();
+	// const renderer = new HtmlRenderer();
 
 	type SelectOption = {
 		value: RowType;
@@ -27,8 +40,14 @@
 		const type = formData.get('type');
 
 		if (type === 'boolean') {
-			const booleanText = formData.get('boolean-text');
-			console.log('booleanText', booleanText);
+			const booleanText = formData.get('boolean-text')?.toString();
+			if (booleanText === undefined || (typeof booleanText === 'string' && booleanText === ''))
+				return;
+			addRow(location, {
+				text: booleanText,
+				type: 'boolean',
+				value: false
+			});
 		} else if (type === 'string') {
 			const stringValue = formData.get('string-value');
 			const stringReplace = formData.get('string-replace');

@@ -1,26 +1,76 @@
 import { writable } from 'svelte/store';
-import { Parser, HtmlRenderer, Node } from 'commonmark';
+import { Parser, HtmlRenderer, Node, type NodeWalkingStep } from 'commonmark';
 import TurndownService from 'turndown';
+import type { NodeRowItem } from './rows.types';
+
+// TODO: Maintain the "NODES" here and update them as need-be.
+//  We will need to reference what type of "node" it is for the
+//    "fill" part of the form.
 
 const TemplateTypes = {
 	html: 'html',
 	node: 'node',
-	markdown: 'markdown'
+	markdown: 'markdown',
+	rows: 'rows'
 } as const;
 
 type TemplateStoreCore = {
 	[TemplateTypes.html]: Readonly<string>;
 	[TemplateTypes.node]: Readonly<Node>;
 	[TemplateTypes.markdown]: Readonly<string>;
+	[TemplateTypes.rows]: Readonly<NodeRowItem[]>;
 };
 
 const turndownSrvs = new TurndownService({ headingStyle: 'atx' });
 const parser = new Parser();
-const renderer = new HtmlRenderer();
+const renderer = new HtmlRenderer({ softbreak: '<br />' });
 
 type markdownAction = { value: string; type: typeof TemplateTypes.markdown };
 type nodeAction = { value: Node; type: typeof TemplateTypes.node };
 type htmlAction = { value: string; type: typeof TemplateTypes.html };
+// Value HTML string, type: 'html', location where to replace this item.
+type rowsAction = { value: string; type: typeof TemplateTypes.html; location: number };
+
+//
+//
+function getNodes(markdownText: string) {
+	const nodes = parser.parse(markdownText);
+	const walker = nodes.walker();
+	let event: NodeWalkingStep | null = null;
+	const newNodes: NodeRowItem[] = [];
+
+	while ((event = walker.next())) {
+		if (event.node.literal !== null && event.node.literal !== undefined) {
+			if (event.entering && event.node.type === 'text') {
+				// node.literal = node.literal.toUpperCase();
+				// console.log(event.node.literal);
+			}
+
+			if (event.node.parent !== null && !event.node.isContainer) {
+				// TODO: Handle lists?
+				const newItem: NodeRowItem = {
+					type: 'html',
+					value: renderer.render(event.node.parent)
+				};
+				newNodes.push(newItem);
+				// parsedNodes = [...parsedNodes, newItem];
+			} else {
+				const newItem: NodeRowItem = {
+					type: 'html',
+					value: renderer.render(event.node)
+				};
+				newNodes.push(newItem);
+				// parsedNodes = [...parsedNodes, newItem];
+			}
+		}
+	}
+
+	console.log(newNodes);
+
+	return newNodes;
+}
+//
+//
 
 function templateReducer(action: htmlAction | nodeAction | markdownAction): TemplateStoreCore {
 	switch (action.type) {
@@ -40,11 +90,12 @@ function templateReducer(action: htmlAction | nodeAction | markdownAction): Temp
 
 function fromMarkdown(value: string): TemplateStoreCore {
 	const node = parser.parse(value);
-
+	const html = renderer.render(node);
 	return {
 		node: node,
-		html: renderer.render(node),
-		markdown: value
+		html,
+		markdown: value,
+		rows: getNodes(value)
 	};
 }
 
@@ -55,7 +106,8 @@ function fromHtml(value: string): TemplateStoreCore {
 	return {
 		node: node,
 		html: value,
-		markdown: mdValue
+		markdown: mdValue,
+		rows: getNodes(mdValue)
 	};
 }
 
@@ -63,7 +115,8 @@ function fromNode(value: Node): TemplateStoreCore {
 	return {
 		node: value,
 		html: renderer.render(value),
-		markdown: '' // TODO: value
+		markdown: '', // TODO: value
+		rows: getNodes('') // TODO: value
 	};
 }
 
