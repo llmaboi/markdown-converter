@@ -51,16 +51,6 @@
 		goto('/customize');
 	}
 
-	function routeToFill() {
-		// htmlTemplate.set(htmlText);
-		dispatch({
-			type: 'html',
-			value: htmlText
-		});
-
-		goto('/fill');
-	}
-
 	/**
 	 * TODO:
 	 * 1. Allow users to save a "template"
@@ -99,10 +89,6 @@
 		<button on:click|preventDefault={downloadData} class="btn variant-ringed">
 			Download template
 		</button>
-
-		<!-- <button on:click|preventDefault={routeToFill} class="btn variant-ringed">
-			Fill made template
-		</button> -->
 
 		<button on:click|preventDefault={routeToCustomize} class="btn variant-ringed">
 			Customize template

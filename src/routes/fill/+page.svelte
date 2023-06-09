@@ -1,30 +1,34 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { clipboard } from '@skeletonlabs/skeleton';
 	import { templateReducible } from '../htmlTemplate.store';
-	// import TurndownService from 'turndown';
+	import type { JoinedRowItemNotNew } from '../rows.types';
 
-	// var md = new TurndownService({
-	// 	headingStyle: 'atx'
-	// });
-	// const reader = new Parser();
-	// const writer = new HtmlRenderer();
-
-	// $: parsedMarkdownText = md.turndown(htmlForm);
-	// $: parsedMarkdownText = JSON.stringify(md.turndown(htmlForm));
-
-	let htmlForm: string;
+	let rows: Readonly<JoinedRowItemNotNew[]> = [];
 
 	const { dispatch, subscribe } = templateReducible();
 
 	subscribe((val) => {
-		htmlForm = val.html;
+		// htmlForm = val.html;
+		rows = val.rows;
 	});
 
 	function routeToEdit() {
 		// TODO: Different store...
 		// htmlTemplate.set(renderer.render(parsedMarkdownText));
-		// goto('/fill');
+		goto('/customize');
+	}
+
+	function updateBooleanNode(row: JoinedRowItemNotNew, location: number) {
+		if (row.type == 'boolean') {
+			dispatch({
+				type: 'row',
+				location,
+				value: {
+					...row,
+					value: !row.value
+				}
+			});
+		}
 	}
 </script>
 
@@ -32,7 +36,31 @@
 	<h1>Fill your template</h1>
 
 	<form>
-		{@html htmlForm}
+		<ul class="list">
+			{#each rows as row, i}
+				<li>
+					<!-- TODO: Maybe change button into checkbox? -->
+					{#if row.type === 'boolean'}
+						<!-- TODO: Allow editing of items -- in separate component -->
+
+						<button class="btn" on:click={() => updateBooleanNode(row, i)}>
+							{@html row.text}
+						</button>
+					{:else if row.type === 'string'}
+						<!-- TODO: Allow editing of items -->
+						{@html row.value}
+						<!-- {:else if row.type === 'new'} -->
+						<!-- TODO: disallow this -->
+						<!-- {null} -->
+					{:else}
+						<!-- TODO: Allow editing of items -->
+						{@html row.value}
+					{/if}
+				</li>
+			{/each}
+		</ul>
+
+		<!-- {@html htmlForm} -->
 
 		<!-- TODO: use proper values... -->
 		<!-- <button use:clipboard={parsedMarkdownText} class="btn variant-ringed">

@@ -29,4 +29,6 @@ export type NewRowItem = RowItems & {
 	value: string;
 };
 
+export type JoinedRowItemNotNew = BooleanRowItem | StringRowItem | NodeRowItem;
+
 export type JoinedRowItem = BooleanRowItem | StringRowItem | NodeRowItem | NewRowItem;

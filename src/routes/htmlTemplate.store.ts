@@ -1,7 +1,9 @@
+import { HtmlRenderer, Node, Parser, type NodeWalkingStep } from 'commonmark';
 import { writable } from 'svelte/store';
-import { Parser, HtmlRenderer, Node, type NodeWalkingStep } from 'commonmark';
 import TurndownService from 'turndown';
-import type { NodeRowItem } from './rows.types';
+import { emptyCheck } from '../components/emptyCheck';
+import { filledCheck } from '../components/filledCheck';
+import type { JoinedRowItemNotNew, NodeRowItem } from './rows.types';
 
 // TODO: Maintain the "NODES" here and update them as need-be.
 //  We will need to reference what type of "node" it is for the
@@ -11,28 +13,46 @@ const TemplateTypes = {
 	html: 'html',
 	node: 'node',
 	markdown: 'markdown',
-	rows: 'rows'
+	rows: 'rows',
+	row: 'row'
 } as const;
 
 type TemplateStoreCore = {
 	[TemplateTypes.html]: Readonly<string>;
 	[TemplateTypes.node]: Readonly<Node>;
 	[TemplateTypes.markdown]: Readonly<string>;
-	[TemplateTypes.rows]: Readonly<NodeRowItem[]>;
+	[TemplateTypes.rows]: Readonly<JoinedRowItemNotNew[]>;
 };
 
+/**
+ * Parsers
+ */
 const turndownSrvs = new TurndownService({ headingStyle: 'atx' });
 const parser = new Parser();
 const renderer = new HtmlRenderer({ softbreak: '<br />' });
 
+/**
+ * Actions on store.
+ */
 type markdownAction = { value: string; type: typeof TemplateTypes.markdown };
 type nodeAction = { value: Node; type: typeof TemplateTypes.node };
 type htmlAction = { value: string; type: typeof TemplateTypes.html };
-// Value HTML string, type: 'html', location where to replace this item.
-type rowsAction = { value: string; type: typeof TemplateTypes.html; location: number };
 
-//
-//
+// Value HTML string, type: 'html', location where to replace this item.
+type rowCreateAction = {
+	value: JoinedRowItemNotNew;
+	type: typeof TemplateTypes.row;
+	location: number;
+};
+type rowUpdateAction = {
+	value: JoinedRowItemNotNew;
+	type: typeof TemplateTypes.rows;
+	location: number;
+};
+
+// Internal store of each row item added.
+let rowItems: JoinedRowItemNotNew[] = [];
+
 function getNodes(markdownText: string) {
 	const nodes = parser.parse(markdownText);
 	const walker = nodes.walker();
@@ -41,10 +61,10 @@ function getNodes(markdownText: string) {
 
 	while ((event = walker.next())) {
 		if (event.node.literal !== null && event.node.literal !== undefined) {
-			if (event.entering && event.node.type === 'text') {
-				// node.literal = node.literal.toUpperCase();
-				// console.log(event.node.literal);
-			}
+			// if (event.entering && event.node.type === 'text') {
+			// node.literal = node.literal.toUpperCase();
+			// console.log(event.node.literal);
+			// }
 
 			if (event.node.parent !== null && !event.node.isContainer) {
 				// TODO: Handle lists?
@@ -53,14 +73,12 @@ function getNodes(markdownText: string) {
 					value: renderer.render(event.node.parent)
 				};
 				newNodes.push(newItem);
-				// parsedNodes = [...parsedNodes, newItem];
 			} else {
 				const newItem: NodeRowItem = {
 					type: 'html',
 					value: renderer.render(event.node)
 				};
 				newNodes.push(newItem);
-				// parsedNodes = [...parsedNodes, newItem];
 			}
 		}
 	}
@@ -69,33 +87,141 @@ function getNodes(markdownText: string) {
 
 	return newNodes;
 }
-//
-//
 
-function templateReducer(action: htmlAction | nodeAction | markdownAction): TemplateStoreCore {
+function templateReducer(
+	action: htmlAction | nodeAction | markdownAction | rowCreateAction | rowUpdateAction
+): TemplateStoreCore {
 	switch (action.type) {
 		case 'html':
-			console.log(action.value);
 			return fromHtml(action.value);
 		case 'node':
-			console.log(action.value);
 			return fromNode(action.value);
 		case 'markdown':
-			console.log(action.value);
 			return fromMarkdown(action.value);
+		case 'rows':
+			return fromRowItem(action.value, action.location);
+		case 'row':
+			return updateRowItem(action.value, action.location);
 		default:
 			throw assertUnreachable(action);
 	}
 }
 
+function updateRowItem(value: JoinedRowItemNotNew, location: number): TemplateStoreCore {
+	let convertedValue = '';
+
+	if (value.type === 'boolean') {
+		convertedValue += value.text;
+
+		if (value.value === true) {
+			convertedValue = convertedValue.replace(emptyCheck, filledCheck);
+		} else {
+			convertedValue = convertedValue.replace(filledCheck, emptyCheck);
+		}
+
+		const node = parser.parse(convertedValue);
+		const html = renderer.render(node);
+		rowItems.splice(location, 1, {
+			type: 'boolean',
+			text: html,
+			value: value.value
+		});
+	} else {
+		convertedValue += `${value.value}`;
+
+		const node = parser.parse(convertedValue);
+		const html = renderer.render(node);
+
+		rowItems.splice(location, 1, {
+			type: 'string',
+			text: html,
+			value: value.value
+		});
+	}
+
+	const joinedNodes = rowItems
+		.map((item) => {
+			if (item.type === 'string' || item.type === 'html') return item.value;
+			if (item.type === 'boolean') return item.text;
+		})
+		.join('\n');
+	const newFullNode = parser.parse(joinedNodes);
+	const newFullHtml = renderer.render(newFullNode);
+	const mdValue = turndownSrvs.turndown(newFullHtml);
+
+	return {
+		node: newFullNode,
+		html: newFullHtml,
+		markdown: mdValue,
+		rows: rowItems
+	};
+}
+
+function fromRowItem(value: JoinedRowItemNotNew, location: number): TemplateStoreCore {
+	let convertedValue = '';
+
+	if (value.type === 'boolean') {
+		convertedValue += `<p>${value.text} `;
+
+		if (value.value === true) {
+			convertedValue += filledCheck;
+		} else {
+			convertedValue += emptyCheck;
+		}
+		convertedValue += '</p>';
+
+		const node = parser.parse(convertedValue);
+		const html = renderer.render(node);
+		rowItems.splice(location, 0, {
+			type: 'boolean',
+			text: html,
+			value: value.value
+		});
+	} else {
+		convertedValue += `${value.value}`;
+
+		const node = parser.parse(convertedValue);
+		const html = renderer.render(node);
+
+		rowItems.splice(location, 0, {
+			type: 'string',
+			text: html,
+			value: value.value
+		});
+	}
+
+	const joinedNodes = rowItems
+		.map((item) => {
+			if (item.type === 'string' || item.type === 'html') return item.value;
+			if (item.type === 'boolean') return item.text;
+		})
+		.join('\n');
+	const newFullNode = parser.parse(joinedNodes);
+	const newFullHtml = renderer.render(newFullNode);
+	const mdValue = turndownSrvs.turndown(newFullHtml);
+
+	return {
+		node: newFullNode,
+		html: newFullHtml,
+		markdown: mdValue,
+		rows: rowItems
+	};
+}
+
 function fromMarkdown(value: string): TemplateStoreCore {
 	const node = parser.parse(value);
 	const html = renderer.render(node);
+
+	const nodes = getNodes(value);
+	rowItems = nodes.map((item) => ({
+		type: 'html',
+		value: item.value
+	}));
 	return {
 		node: node,
 		html,
 		markdown: value,
-		rows: getNodes(value)
+		rows: rowItems
 	};
 }
 
@@ -103,20 +229,30 @@ function fromHtml(value: string): TemplateStoreCore {
 	const mdValue = turndownSrvs.turndown(value);
 	const node = parser.parse(value);
 
+	const nodes = getNodes(mdValue);
+	rowItems = nodes.map((item) => ({
+		type: 'html',
+		value: item.value
+	}));
+
 	return {
 		node: node,
 		html: value,
 		markdown: mdValue,
-		rows: getNodes(mdValue)
+		rows: rowItems
 	};
 }
 
+// TODO: I'm not sure?
 function fromNode(value: Node): TemplateStoreCore {
+	// const nodes = getNodes(value);
+	// htmlNodes = nodes.map((item) => item.value);
+
 	return {
 		node: value,
 		html: renderer.render(value),
 		markdown: '', // TODO: value
-		rows: getNodes('') // TODO: value
+		rows: [] // getNodes('') // TODO: value
 	};
 }
 
@@ -142,36 +278,11 @@ export function templateReducible() {
 
 	first++;
 
-	function dispatch(action: htmlAction | nodeAction | markdownAction) {
+	function dispatch(
+		action: htmlAction | nodeAction | markdownAction | rowCreateAction | rowUpdateAction
+	) {
 		update(() => templateReducer(action));
 	}
 
 	return { subscribe, dispatch };
 }
-
-// //
-// function reducer(count: number, action: { type: string }) {
-// 	switch (action.type) {
-// 		case 'increment':
-// 			return count + 1;
-// 		case 'decrement':
-// 			return count - 1;
-// 		default:
-// 			throw new Error();
-// 	}
-// }
-
-// const [count, dispatch] = reducible(0, reducer);
-
-// export function reducible(
-// 	state: number,
-// 	reducer: (count: number, action: { type: string }) => number
-// ) {
-// 	const { update, subscribe } = writable(state);
-
-// 	function dispatch(action: { type: string }) {
-// 		update((state) => templateReducer(state, action));
-// 	}
-
-// 	return [{ subscribe }, dispatch];
-// }
