@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import type { Node } from 'commonmark';
-	import { HtmlRenderer, Parser } from 'commonmark';
-	import TurndownService from 'turndown';
 	import { templateReducible } from '../htmlTemplate.store';
 	import type { BooleanRowItem, JoinedRowItem, NewRowItem, StringRowItem } from '../rows.types';
 	import CustomNode from './CustomNode.svelte';
@@ -33,6 +31,20 @@
 		fullRowItems = [...newRows];
 	}
 
+	function cancelItem(location: number) {
+		const newRows = [...fullRowItems];
+		newRows.splice(location, 1);
+
+		fullRowItems = [...newRows];
+	}
+
+	function removeItem(location: number) {
+		dispatch({
+			type: 'remove',
+			location
+		});
+	}
+
 	function addRow(location: number, item: BooleanRowItem | StringRowItem) {
 		dispatch({
 			type: 'rows',
@@ -45,11 +57,17 @@
 	function routeToFill() {
 		goto('/fill');
 	}
+	function routeToFillMarkdown() {
+		goto('/fill/markdown');
+	}
 </script>
 
 <div class="container mx-auto p-8 space-y-8">
 	<button on:click|preventDefault={routeToFill} class="btn variant-ringed">
 		Fill made template
+	</button>
+	<button on:click|preventDefault={routeToFillMarkdown} class="btn variant-ringed">
+		Edit as markdown
 	</button>
 
 	<ul class="list">
@@ -63,10 +81,16 @@
 					<InsertButtons index={i} clickAction={insertRow} totalLength={fullRowItems.length} />
 				{:else if fullRowItem.type === 'new'}
 					{@html fullRowItem.value}
-					<CustomNode location={i} {addRow} />
+					<CustomNode location={i} {addRow} cancelAdd={cancelItem} />
 				{:else}
 					{@html fullRowItem.value}
 					<InsertButtons index={i} clickAction={insertRow} totalLength={fullRowItems.length} />
+				{/if}
+
+				{#if fullRowItem.type !== 'new'}
+					<button class="btn btn-sm variant-ringed-warning" on:click|preventDefault={() => removeItem(i)}>
+						Remove
+					</button>
 				{/if}
 			</li>
 		{/each}

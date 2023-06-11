@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { Parser } from 'commonmark';
-	import { emptyCheck } from '../../components/emptyCheck';
-	import type { BooleanRowItem, NewRowItem, RowType, StringRowItem } from '../rows.types';
 	import type { FormEventHandler } from 'svelte/elements';
-	import { HtmlRenderer } from 'commonmark';
+	import type { BooleanRowItem, RowType, StringRowItem } from '../rows.types';
 
 	export let location: number;
 	export let addRow: (
@@ -11,6 +8,8 @@
 		// type: Extract<RowType, 'boolean' | 'string'>,
 		item: BooleanRowItem | StringRowItem
 	) => void;
+
+	export let cancelAdd: (location: number) => void;
 
 	let selectedValue: Extract<RowType, 'boolean' | 'string'>;
 
@@ -54,13 +53,15 @@
 			console.log('stringValue', stringValue);
 			// console.log('stringReplace', stringReplace);
 			// TODO: Warn that you cannot submit this?
-			if (stringValue === undefined 
-			// || stringReplace === undefined
-			) return;
+			if (
+				stringValue === undefined
+				// || stringReplace === undefined
+			)
+				return;
 
 			addRow(location, {
 				value: stringValue,
-				type: 'string',
+				type: 'string'
 				// replacer: stringReplace
 			});
 		}
@@ -98,5 +99,10 @@
 			<input name="string-replace" type="text" class="input" />
 		</label> -->
 	{/if}
-	<button class="btn">Add</button>
+
+	<button on:click|preventDefault={() => cancelAdd(location)} class="btn variant-ringed-warning">
+		Cancel
+	</button>
+
+	<button type="submit" class="btn variant-ringed-success">Add</button>
 </form>

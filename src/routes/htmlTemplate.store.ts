@@ -14,7 +14,8 @@ const TemplateTypes = {
 	node: 'node',
 	markdown: 'markdown',
 	rows: 'rows',
-	row: 'row'
+	row: 'row',
+	remove: 'remove',
 } as const;
 
 type TemplateStoreCore = {
@@ -29,7 +30,7 @@ type TemplateStoreCore = {
  */
 const turndownSrvs = new TurndownService({ headingStyle: 'atx' });
 const parser = new Parser();
-const renderer = new HtmlRenderer({ softbreak: '<br />' });
+const renderer = new HtmlRenderer();
 
 /**
  * Actions on store.
@@ -47,6 +48,10 @@ type rowCreateAction = {
 type rowUpdateAction = {
 	value: JoinedRowItemNotNew;
 	type: typeof TemplateTypes.rows;
+	location: number;
+};
+type rowRemoveAction = {
+	type: typeof TemplateTypes.remove;
 	location: number;
 };
 
@@ -89,7 +94,7 @@ function getNodes(markdownText: string) {
 }
 
 function templateReducer(
-	action: htmlAction | nodeAction | markdownAction | rowCreateAction | rowUpdateAction
+	action: htmlAction | nodeAction | markdownAction | rowCreateAction | rowUpdateAction | rowRemoveAction
 ): TemplateStoreCore {
 	switch (action.type) {
 		case 'html':
@@ -102,6 +107,8 @@ function templateReducer(
 			return fromRowItem(action.value, action.location);
 		case 'row':
 			return updateRowItem(action.value, action.location);
+			case 'remove':
+				return removeRowItem( action.location);
 		default:
 			throw assertUnreachable(action);
 	}
@@ -139,6 +146,27 @@ function updateRowItem(value: JoinedRowItemNotNew, location: number): TemplateSt
 		});
 	}
 
+	const joinedNodes = rowItems
+		.map((item) => {
+			if (item.type === 'string' || item.type === 'html') return item.value;
+			if (item.type === 'boolean') return item.text;
+		})
+		.join('\n');
+	const newFullNode = parser.parse(joinedNodes);
+	const newFullHtml = renderer.render(newFullNode);
+	const mdValue = turndownSrvs.turndown(newFullHtml);
+
+	return {
+		node: newFullNode,
+		html: newFullHtml,
+		markdown: mdValue,
+		rows: rowItems
+	};
+}
+
+function removeRowItem(location: number) {
+	rowItems.splice(location, 1);
+	
 	const joinedNodes = rowItems
 		.map((item) => {
 			if (item.type === 'string' || item.type === 'html') return item.value;
@@ -280,7 +308,7 @@ export function templateReducible() {
 	first++;
 
 	function dispatch(
-		action: htmlAction | nodeAction | markdownAction | rowCreateAction | rowUpdateAction
+		action: htmlAction | nodeAction | markdownAction | rowCreateAction | rowUpdateAction | rowRemoveAction
 	) {
 		update(() => templateReducer(action));
 	}
