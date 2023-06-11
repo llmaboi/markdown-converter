@@ -6,6 +6,7 @@
 * 4. Allow users to fill the "template"
 * 5. Allow the users to copy the generated Markdown from the "template"
 * 6. FINAL
+* 7. Optional allow lists (adding many items as a "subset")
 *
 * Next features is to replace `input` tags with `checkbox` with
 *   allowed icons for ✅ OR ☑️.

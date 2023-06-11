@@ -126,7 +126,7 @@ function updateRowItem(value: JoinedRowItemNotNew, location: number): TemplateSt
 			text: html,
 			value: value.value
 		});
-	} else {
+	} else if(value.type === 'string') {
 		convertedValue += `${value.value}`;
 
 		const node = parser.parse(convertedValue);
@@ -134,8 +134,8 @@ function updateRowItem(value: JoinedRowItemNotNew, location: number): TemplateSt
 
 		rowItems.splice(location, 1, {
 			type: 'string',
-			text: html,
-			value: value.value
+			value: html,
+			// replacer: value.replacer
 		});
 	}
 
@@ -177,7 +177,8 @@ function fromRowItem(value: JoinedRowItemNotNew, location: number): TemplateStor
 			text: html,
 			value: value.value
 		});
-	} else {
+	} else if(value.type ==='string') {
+		// TODO: This needs to factor in the "replacer" still.
 		convertedValue += `${value.value}`;
 
 		const node = parser.parse(convertedValue);
@@ -185,8 +186,8 @@ function fromRowItem(value: JoinedRowItemNotNew, location: number): TemplateStor
 
 		rowItems.splice(location, 0, {
 			type: 'string',
-			text: html,
-			value: value.value
+			value: html,
+			// replacer: value.replacer
 		});
 	}
 

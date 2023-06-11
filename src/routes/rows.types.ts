@@ -12,11 +12,10 @@ export type BooleanRowItem = RowItems & {
 	text: string;
 };
 
-// TODO: Replace placeholder with VALUE
 export type StringRowItem = RowItems & {
 	type: 'string';
+	// replacer: string;
 	value: string;
-	text: string;
 };
 
 export type NodeRowItem = RowItems & {

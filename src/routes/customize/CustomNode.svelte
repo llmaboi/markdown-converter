@@ -49,10 +49,20 @@
 				value: false
 			});
 		} else if (type === 'string') {
-			const stringValue = formData.get('string-value');
-			const stringReplace = formData.get('string-replace');
+			const stringValue = formData.get('string-value')?.toString();
+			// const stringReplace = formData.get('string-replace')?.toString();
 			console.log('stringValue', stringValue);
-			console.log('stringReplace', stringReplace);
+			// console.log('stringReplace', stringReplace);
+			// TODO: Warn that you cannot submit this?
+			if (stringValue === undefined 
+			// || stringReplace === undefined
+			) return;
+
+			addRow(location, {
+				value: stringValue,
+				type: 'string',
+				// replacer: stringReplace
+			});
 		}
 	};
 </script>
@@ -83,10 +93,10 @@
 			<span>String value:</span>
 			<input name="string-value" type="text" class="input" />
 		</label>
-		<label class="label">
+		<!-- <label class="label">
 			<span>String replace characters:</span>
 			<input name="string-replace" type="text" class="input" />
-		</label>
+		</label> -->
 	{/if}
 	<button class="btn">Add</button>
 </form>

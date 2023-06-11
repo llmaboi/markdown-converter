@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { clipboard } from '@skeletonlabs/skeleton';
 	import { templateReducible } from '../htmlTemplate.store';
 	import type { JoinedRowItemNotNew } from '../rows.types';
 
 	let rows: Readonly<JoinedRowItemNotNew[]> = [];
+	let markdown: Readonly<string>;
 
 	const { dispatch, subscribe } = templateReducible();
 
 	subscribe((val) => {
 		// htmlForm = val.html;
+		markdown = val.markdown;
 		rows = val.rows;
 	});
 
@@ -18,8 +21,8 @@
 		goto('/customize');
 	}
 
-	function updateBooleanNode(row: JoinedRowItemNotNew, location: number) {
-		if (row.type == 'boolean') {
+	function updateNode(row: JoinedRowItemNotNew, location: number) {
+		if (row.type === 'boolean') {
 			dispatch({
 				type: 'row',
 				location,
@@ -29,6 +32,16 @@
 				}
 			});
 		}
+		//  else if (row.type === 'string') {
+		// 	dispatch({
+		// 		type: 'row',
+		// 		location,
+		// 		value: {
+		// 			...row,
+		// 			value: row.value
+		// 		}
+		// 	});
+		// }
 	}
 </script>
 
@@ -36,39 +49,33 @@
 	<h1>Fill your template</h1>
 
 	<form>
-		<ul class="list">
-			{#each rows as row, i}
-				<li>
-					<!-- TODO: Maybe change button into checkbox? -->
-					{#if row.type === 'boolean'}
-						<!-- TODO: Allow editing of items -- in separate component -->
+		{#each rows as row, i}
+			{#if row.type === 'boolean'}
+				<label class="flex space-x-2">
+					<input
+						class="checkbox"
+						type="checkbox"
+						value={row.value}
+						on:click={() => updateNode(row, i)}
+					/>
+					<span>{@html row.text}</span>
+				</label>
+			{:else if row.type === 'string'}
+				<!-- TODO: Allow editing of strings? -->
 
-						<button class="btn" on:click={() => updateBooleanNode(row, i)}>
-							{@html row.text}
-						</button>
-					{:else if row.type === 'string'}
-						<!-- TODO: Allow editing of items -->
-						{@html row.value}
-						<!-- {:else if row.type === 'new'} -->
-						<!-- TODO: disallow this -->
-						<!-- {null} -->
-					{:else}
-						<!-- TODO: Allow editing of items -->
-						{@html row.value}
-					{/if}
-				</li>
-			{/each}
-		</ul>
+				{@html row.value}
+				<!-- <input class="input" type="text" value={row.value} on:keyup={() => updateNode(row, i)} /> -->
+			{:else}
+				{@html row.value}
+			{/if}
+		{/each}
 
-		<!-- {@html htmlForm} -->
-
-		<!-- TODO: use proper values... -->
-		<!-- <button use:clipboard={parsedMarkdownText} class="btn variant-ringed">
-			Copy form to clipboard
-		</button> -->
-
-		<button on:click|preventDefault={routeToEdit} class="btn variant-ringed">
+		<button on:click|preventDefault={routeToEdit} class="btn variant-ringed-warning">
 			Edit template
+		</button>
+
+		<button use:clipboard={markdown} class="btn variant-ringed-success">
+			Copy form to clipboard
 		</button>
 	</form>
 </section>
